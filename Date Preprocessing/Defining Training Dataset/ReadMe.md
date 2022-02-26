@@ -1,4 +1,4 @@
-Obtaining meteorology data from rnoaa package
+Defining Training/Test Dataset
 ================
 
 
