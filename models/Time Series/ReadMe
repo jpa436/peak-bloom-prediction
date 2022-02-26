@@ -1281,3 +1281,4 @@ plt.show()
 
 
 It is interesting to see that the prediction doesn't really do well on predicting; it tells me that other information must be considered to predict the bloom doy.
+ 
