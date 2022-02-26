@@ -1,6 +1,10 @@
 Obtaining meteorology data from rnoaa package
 ================
 
+<!--   rmarkdown::github_document
+    code_folding: hide
+    code_download: true -->
+
 In this tutorial, we would like to show how we obtained the weather data
 through rnoaa package. As a demonstration, we would like to show how we
 collected data for <tt>korea.csv</tt>. Let’s take a look at the first
@@ -234,6 +238,10 @@ Finally, using inner\_join, we obtain the final table.
 
 ``` r
 final = inner_join(x = korea, y = output, by = c('stationid','year'))
+# We want to include the following months: Oct, Nov, Dec, Jan, Feb, Mar, Apr
+# For prediction, temperatures for dates after March 10th won't be used for modeling/prediction
+# but we included them to explore the data
+final = final[final$month %in% c(0,1,2,3,4,-1,-2) ,]
 
 knitr::kable(head(final))
 ```
