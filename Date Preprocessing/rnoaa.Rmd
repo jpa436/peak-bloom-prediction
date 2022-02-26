@@ -1,0 +1,149 @@
+---
+title: "Obtaining meteorology data from rnoaa package"
+output:
+  html_document:
+    code_folding: hide
+    code_download: true
+
+
+---
+
+
+```{r setup, incldue = FALSE, warning = FALSE, message = FALSE, echo = FALSE}
+library(tidyverse)
+setwd('../data/')
+library(rnoaa)
+korea = read.csv('south_korea.csv')
+```
+
+In this tutorial, we would like to show how we obtained the weather data through rnoaa package.
+As a demonstration, we would like to show how we collected data for <tt>korea.csv</tt>. Let's take a look at the first several rows of the data.
+
+
+```{r, results='asis'}
+knitr::kable(head(korea))
+```
+
+
+Given latitude and longitude information, we would like to find weather stations, which have historical weather data.
+To find the weather stations, first we need to get stations information using <tt>ghcnd_stations</tt> function from <tt>rnoaa</tt> package.
+The data retrieved contains the basic information of each weather stations.
+
+```{r, warning = FALSE, message = FALSE}
+stations <- ghcnd_stations()
+knitr::kable(head(stations))
+```
+
+
+There is another function, <tt>meteo_nearby_stations</tt>, which allows us to find nearby station given latitude and longitude information.
+However, to use the function, it requires a dataframe with the certain column names; 'id','latitude', and 'longitude'.
+Hence, we will first select the first three columns from korea and name it <tt>korea_latlong</tt> and change the column names.
+Then we select the unique set of longitude and latitude to avoid searching for the same location multiple times.
+```{r}
+korea_latlong = korea[,1:3]
+colnames(korea_latlong) = c('id','latitude','longitude')
+korea_latlong = korea_latlong %>% unique()
+knitr::kable(head(korea_latlong))
+```
+
+
+Now passing the <tt>korea_latlong</tt> into the <tt>meteo_nearby_stations</tt>, you can find a list of available stations for each of the latitude and longitude value.
+Not all cities have a weather station in 20km radius. Among the cities with available weather station, we will show you Yeosu as an example. 
+```{r}
+result = meteo_nearby_stations(korea_latlong, station_data = stations, radius = 20, year_min = 1990) 
+knitr::kable(result['South Korea/Yeosu'])
+```
+
+The result shows that there is one station 1.1km away from the latitude and longitude we have for the city of Yeosu.
+Availability of the nearby weather station does not assure that the weather station store information we would like to explore.
+In our case, we want to obtain 'tavg','tmin','tmax', and 'prcp'. Due to our imputation method, it is okay to contain two of the temperature variables.
+Using for-loop, we will explore each of the weather station and check if they provide at least three of the four variables.
+After the for-loop, it seems like the station near Yeosu has met our criteria.
+```{r}
+for(i in 1:length(result)){
+  output = NULL
+  if(dim(result[[i]])[1] > 1){
+    station_ids = result[[i]]$id
+    for (stationid in station_ids){
+      list_df = ghcnd_search(stationid = stationid, var = c("tmax",'tmin','prcp','tavg'),
+                             date_min = "1951-10-01", date_max = "2022-02-28")
+      N = attributes(list_df)$names %>% length()
+      N
+      if(N>3){
+        output = c(output, stationid)
+      }
+    }
+    if(length(output) == 0){
+      result[i] = NULL
+    }
+    else{
+      result[[i]] = result[[i]][result[[i]]$id == output[1],]
+    }
+  }
+}
+knitr::kable(result['South Korea/Yeosu'])
+```
+
+Now back to korea_latlong table, we would like to narrow down to the list of cities where nearby weather station, which meets our criteria, exists.
+To do so, we created 'exist' variable which indicates whether the weather station is available and selected only those rows that are TRUE for the variable.
+We also add a variable 'stationid' which indicates the unique weather station id in the 'result' dataframe for each of the corresponding cities.
+Finally, using the right merge, in the 'korea' dataframe, we have only the cities with available weather station and its weather station id.
+```{r}
+korea_latlong['exist'] = sapply(korea_latlong$id, function(x){dim(result[[as.character(x)]])[1] > 0}) %>% unlist()
+korea_latlong = korea_latlong[korea_latlong$exist, ]
+korea_latlong['stationid']  = sapply(korea_latlong$id, function(x){result[[as.character(x)]]$id   })
+# we need to change the column names of the korea_latlong
+colnames(korea_latlong)[1:3] = c('location', 'lat','long')
+# merge
+korea = left_join(x= korea, y = korea_latlong, by = c('location','lat','long')) %>% na.omit() %>% 
+  dplyr::select(c('stationid','location','lat','long','alt','year','bloom_date','bloom_doy'))
+knitr::kable(head(korea))
+```
+
+Now, going over each of the city, we will collect weather information from the corresponding weather stations defined by the 'stationid' column.
+We will create a dataframe, 'output', which contain all the weather information between 1951 and early 2022.
+Even though we set the begin date on October 1951, it returns either this or the earliest avaiable date.
+```{r, warning = FALSE, message = FALSE}
+output = NULL
+for( stationid in unique(korea$stationid)){
+  list_df = ghcnd_search(stationid = stationid, var = c("tmax",'tmin','prcp','tavg'), 
+                         date_min = "1951-10-01", date_max = "2022-02-28")
+  
+  N = attributes(list_df)$names %>% length()
+  df = list_df[[1]]
+  df
+  N
+  if(N > 1){
+  for(i in 2:N){
+    df = left_join(x = df, y = list_df[[i]], by = c('id','date'))
+  }}
+  #df = df %>% dplyr::select(c('id','date','tmax','tmin','prcp'))
+  
+  df = df %>% dplyr::select(c('id','date',attributes(list_df)$names))
+  colnames(df)[1] = 'stationid'
+  output = plyr::rbind.fill(output, df)
+}
+knitr::kable(head(output))
+
+```
+
+Before merging this table with the 'korea' table, we need to mutate the variables.
+December is going to be 0 and October and November of the previous year is going to be -2 and -1 respectively.
+Also, for October, November, and December, their year value increase by 1.
+
+```{r}
+output = output %>% mutate(year = as.integer(format(date, "%Y")),
+                           month = as.integer(strftime(date, '%m')) %% 12,
+                           month = if_else(month %in% c(10, 11), month -12, month),
+                           year = if_else(month <= 0, year + 1L, year))
+knitr::kable(head(output))
+```
+
+
+Finally, using inner_join, we obtain the final table.
+```{r}
+final = inner_join(x = korea, y = output, by = c('stationid','year'))
+
+knitr::kable(head(final))
+```
+
