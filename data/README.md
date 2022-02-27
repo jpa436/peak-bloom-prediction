@@ -1,5 +1,8 @@
 # Cleaned data sets : clean_data.csv
 
+**Note that in the ipynb files, the name of this file is lee.csv**
+
+
 The structure of the cleaned data files is as follows:
 
 * _location_ location identifier (`string`)
