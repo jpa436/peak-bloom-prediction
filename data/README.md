@@ -2,6 +2,48 @@
 
 **Note that in the ipynb files, the name of this file is lee.csv**
 
+Table 1. List of weather variables created for possible inclusion in the predictive model.   
+
+
+
+
+Latitude of the location 
+
+Longitude of the location 
+
+Altitude of the location 
+
+Year of observation 
+
+Day of year when the 14 days moving average of average temperature is at the minimum 
+
+Day of year when the 14 days moving average of maximum temperature is at the minimum 
+
+Day of year when the 14 days moving average of minimum temperature is at the minimum 
+
+The daily average temperature of the day 14-days-moving average reached the minimum 
+
+The daily minimum temperature of the day 14-days-moving average reached the minimum 
+
+The daily maximum temperature of the day 14-days-moving average reached the minimum 
+
+Number of days in October, November, December, January, February with precipitation, separately 
+
+Average temperature of October, November, December, January, February, March, separately 
+
+The maximum temperature of October, November, December, January, February, March, separately 
+
+The minimum temperature of October, November, December, January, February, March, separately 
+
+Square of cosine of longitude   
+
+The slope coefficient of the linear fit between day of year and average temperature in a period between the coldest period and March 10. It captures the speed of temperature change 
+
+The squared term coefficient of the linear fit between day of year and the squared average temperature in a period between the coldest period and March 10. It captures the acceleration of temperature change 
+
+The intercept term coefficient of the linear fit between day of year and the squared average temperature in a period between the coldest period and March 10.  
+
+
 
 The structure of the cleaned data files is as follows:
 
