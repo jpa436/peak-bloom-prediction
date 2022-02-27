@@ -1,4 +1,4 @@
-# Cleaned data sets : cleaned_data.csv
+# Cleaned data sets : clean_data.csv
 
 The structure of the cleaned data files is as follows:
 
