@@ -1,0 +1,184 @@
+---
+title: "Cherry blossom: Imputation of NA"
+output: rmarkdown::github_document
+
+---
+
+<!--   rmarkdown::github_document
+    code_folding: hide
+    code_download: true -->
+
+
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+########### Data imputation
+
+library(readr)
+korea_complete<- read_csv("C:/Users/cheap/Downloads/korea_complete.csv")
+kyoto_complete <- read_csv("C:/Users/cheap/Downloads/kyoto_complete.csv")
+liestal_complete <- read_csv("C:/Users/cheap/Downloads/liestal_complete.csv")
+washingtondc_complete <- read_csv("C:/Users/cheap/Downloads/washingtondc_complete.csv")
+japan_complete <- read_csv("C:/Users/cheap/Downloads/japan_complete.csv")
+us_complete <- read_csv("C:/Users/cheap/Downloads/us_complete.csv")
+switzerland_complete <- read_csv("C:/Users/cheap/Downloads/switzerland_complete.csv")
+
+
+```
+
+In this page, I will demonstrate how we imputed NAs in our dataset. Let's see first few rows of <tt>korea_complete</tt> dataset. 
+
+There are several <tt>NA</tt>s in <tt>tmin</tt> and <tt>prec</tt> data. We would like to replace these <tt>NA</tt>s with reasonable numbers. 
+
+```{r, results='asis'}
+knitr::kable(head(korea_complete))
+```
+
+
+We divided cases of missing data:
+
+<b>1) When one of <tt>tmax</tt>, <tt>tmin</tt>, and <tt>tavg</tt> is missing. </b>
+
+We replaced the missing values with regression prediction. For instance, to replace the following missing values, we ran linear regression with <tt>tmin</tt> on <tt>tmax</tt> and <tt>tavg</tt>. In the following case, we replaced the first <tt>NA</tt> of <tt>tmin</tt> with
+
+$$tmin=-20.375867-0.505408 \times tmax+1.473154\times tavg$$. 
+
+We did the same regression to replace <tt>tmax</tt> and <tt>tavg</tt>. We used the data of each country when we regress. 
+
+```{r, results='asis'}
+knitr::kable(korea_complete[c(7,8),])
+```
+
+```{r}
+summary(lm(data=korea_complete, tmin~tmax+tavg))
+```
+
+<b>2) When two values are missing in one row.</b> Let's see the following case. 
+In the following case, both <tt>tmax</tt> and <tt>tmin</tt> are missing. In this case, we used replaced the missing value with moving average method. In the case below, the <tt>tmax</tt> was replaced by $(236+190)/2=213$. We used moving average 4, and used exponential weights. 
+
+
+```{r, results='asis'}
+knitr::kable(korea_complete[c(30229:30231),])
+```
+
+
+<b>3) When <tt>prec</tt> is missing, we replaced it with 0. </b>
+
+<tt>Temp\$prcp[is.na(Temp\$prcp)]<-0</tt>
+
+```{r, eval=FALSE}
+############## Imputation of NAs
+filenames<-c("korea_complete","kyoto_complete","switzerland_complete", "washingtondc_complete", "japan_complete", "us_complete")
+
+for(k in 1:length(filenames)){
+  Temp<-get(filenames[k]) # define dataset here
+  print(paste0(filenames[k], " Start!"))
+
+  ## Check if the variable has different name.
+  tmin.v<-Temp$tmin
+  tmax.v<-Temp$tmax
+  tavg.v<-Temp$tavg
+  null.v<-c(is.null(tmin.v), is.null(tmax.v), is.null(tavg.v))
+  if(sum(null.v)>0){
+    print(paste0(filenames[k], " was not executed"))
+  }else{
+    # regress tmax, tmin, tavg on the others
+    md.max<-lm(data=Temp, tmax~tmin+tavg)
+    md.min<-lm(data=Temp, tmin~tmax+tavg)
+    md.avg<-lm(data=Temp, tavg~tmax+tmin)
+    
+    for(i in 1:nrow(Temp)){
+      df<-Temp[i,]
+      tmin<-df$tmin
+      tmax<-df$tmax
+      tavg<-df$tavg
+      NA.arr<-is.na(c(tmin, tmax, tavg))
+      if(sum(NA.arr==c(1,0,0))==3){
+        # replace missing tmin with prediction from the regression
+        tmin<-predict(md.min,data.frame(tmax=tmax,tavg=tavg))
+      }
+      if(sum(NA.arr==c(0,1,0))==3){
+         # replace missing tmin with prediction from the regression
+        tmax<-predict(md.max,data.frame(tmin=tmin,tavg=tavg))
+      }
+      if(sum(NA.arr==c(0,0,1))==3){
+         # replace missing tmin with prediction from the regression
+        tavg<-predict(md.avg,data.frame(tmax=tmax,tmin=tmin))
+      }
+      Temp$tmin[i]<-tmin
+      Temp$tmax[i]<-tmax
+      Temp$tavg[i]<-tavg
+      if(i%%10000==0){
+        print(i)
+      }
+    }
+    ## impute missing variables with MA(4), with exponential weight
+    Temp$tavg<-imputeTS::na_ma(Temp$tavg)
+    Temp$tmin<-imputeTS::na_ma(Temp$tmin)
+    Temp$tmax<-imputeTS::na_ma(Temp$tmax)
+    ## impute missing variable when prcp is missing. 
+    Temp$prcp[is.na(Temp$prcp)]<-0
+    ## write out the processed dataset
+    write_csv(Temp, paste0(filenames[k], "_na_imputed.csv"))
+    print(paste0(filenames[k], " Finished!"))
+  }
+}
+
+```
+
+
+<b>4) For Liestal, we could not attain <tt>tavg</tt> at all. </b>
+Hence, we averaged <tt>tmin</tt> and <tt>tmax</tt> to approximate <tt>tavg</tt>. 
+
+<tt>Temp\$tavg<-0.5\*Temp$tmax+0.5\*Temp\$tmin</tt>
+
+```{r, eval=FALSE}
+##################liestal
+filenames<-"liestal_complete"
+  Temp<-get(filenames) # define dataset here
+  print(paste0(filenames[k], " Start!"))
+  
+  Temp$tavg<-0.5*Temp$tmax+0.5*Temp$tmin
+  md.max<-lm(data=Temp, tmax~tmin+tavg)
+  md.min<-lm(data=Temp, tmin~tmax+tavg)
+  md.avg<-lm(data=Temp, tavg~tmax+tmin)
+  
+  #summary(md.max)
+  
+  for(i in 1:nrow(Temp)){
+    df<-Temp[i,]
+    tmin<-df$tmin
+    tmax<-df$tmax
+    tavg<-df$tavg
+    NA.arr<-is.na(c(tmin, tmax, tavg))
+    if(sum(NA.arr==c(1,0,0))==3){
+      tmin<-predict(md.min,data.frame(tmax=tmax,tavg=tavg))
+    }
+    if(sum(NA.arr==c(0,1,0))==3){
+      tmax<-predict(md.max,data.frame(tmin=tmin,tavg=tavg))
+    }
+    if(sum(NA.arr==c(0,0,1))==3){
+      tavg<-predict(md.avg,data.frame(tmax=tmax,tmin=tmin))
+    }
+    Temp$tmin[i]<-tmin
+    Temp$tmax[i]<-tmax
+    Temp$tavg[i]<-tavg
+    Temp$prcp[is.na(Temp$prcp)]<-0
+    if(i%%10000==0){
+      print(i)
+    }
+  }
+  ## impute missing variables with MA(4), with exponential weight
+  
+  Temp$tavg<-imputeTS::na_ma(Temp$tavg)
+  Temp$tmin<-imputeTS::na_ma(Temp$tmin)
+  Temp$tmax<-imputeTS::na_ma(Temp$tmax)
+  
+  write_csv(Temp, paste0(filenames[k], "_na_imputed.csv"))
+  print(paste0(filenames[k], " Finished!"))
+  
+```  
+
+
+
+
