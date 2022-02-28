@@ -9,6 +9,6 @@ We first obtained the weather data using `rnoaa` R package. Then using the imput
 4. Finding Interaction Terms using rFSA
 
 ### CSV files in the codes:
-* korea_complete.csv: It is the output dataset after obtaining weather data from `rnoaa` package.
-* longdata.csv : longdata.csv contains weather information for all the cities and the weather information is already imputed. Therefore, longdata.csv is used to extract monthly weather data as well as general weather trend throughout the winter and spring.
-* lee.csv: dataset to be used to fit the models.
+* *korea_complete.csv*: It is the output dataset after obtaining weather data from `rnoaa` package.
+* *longdata.csv* : longdata.csv contains weather information for all the cities and the weather information is already imputed. Therefore, longdata.csv is used to extract monthly weather data as well as general weather trend throughout the winter and spring.
+* *lee.csv*: dataset to be used to fit the models.
