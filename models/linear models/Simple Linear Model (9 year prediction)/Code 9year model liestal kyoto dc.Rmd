@@ -1,0 +1,36 @@
+---
+title: "Cherry Blossom prediction: 2023-2031 Model for Liestal, Kyoto and Washington DC"
+output: rmarkdown::github_document
+---
+<!--   rmarkdown::github_document
+    code_folding: hide
+    code_download: true -->
+    
+```{r setup, include = FALSE, warning = FALSE, message = FALSE, echo = FALSE}
+library(tidyverse)
+# Load the data
+kyoto<-read.csv("E:/Gitrepo.Rproj/data/kyoto.csv")
+liestal<-read.csv("E:/Gitrepo.Rproj/data/liestal.csv")
+DC<-read.csv("E:/Gitrepo.Rproj/data/washingtondc.csv")
+
+```
+
+
+In this page, we will illustrate how we extrapolated our prediction to year 2023-2031 for three cities(Liestal, Kyoto, and Washington DC). 
+
+Considering the recent rising trend in temperature, we used data after year 1988. 
+
+The result follows:
+
+```{r}
+m.kyoto<-lm(data=kyoto[kyoto$year>1988,], bloom_doy~year+I(year^2))
+m.liestal<-lm(data=liestal[liestal$year>1988,], bloom_doy~year+I(year^2))
+m.DC<-lm(data=DC[DC$year>1988,], bloom_doy~year+I(year^2))
+
+summary(m.kyoto)
+summary(m.liestal)
+summary(m.DC)
+nine.year<-data.frame(kyoto=m.kyoto$coefficients, liestal=m.liestal$coefficients, DC=m.DC$coefficients)
+write.csv(nine.year, "9yearcoef.csv")
+```
+
