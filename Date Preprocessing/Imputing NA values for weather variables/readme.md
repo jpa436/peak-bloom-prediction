@@ -1,5 +1,3 @@
-## Imputing NA values for weather variables
-
 Cherry blossom: Imputation of NA
 ================
 
