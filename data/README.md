@@ -58,4 +58,4 @@ George Mason’s Department of Statistics cherry blossom peak bloom prediction c
 
 `rnoaa` R-package: https://github.com/ropensci/rnoaa
 
-The Weather Channel https://weather.com/
+The Weather Channel : https://weather.com/
