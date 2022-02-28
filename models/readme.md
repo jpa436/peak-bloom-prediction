@@ -33,3 +33,11 @@ data.frame(models, 'mean RMSE' =  mean, 'variance RMSE' = variance)
     ## 6               Random Forest  6.271238     0.1706327
     ## 7                        MARS  6.432695     0.3615145
     ## 8 MARS with Adaptive Boosting  6.115788     0.2419594
+
+
+
+
+## For predicting 2023 - 2031
+
+1. For Washington DC, Kyoto, and Liestal: Simple Linear Model (bloom_doy ~ year + I(year^2)) for each city individually
+2. For Toronto: Generalized Additive Model
