@@ -1,0 +1,285 @@
+---
+title: "Cherry Blossom prediction: Model comparison"
+output: rmarkdown::github_document
+---
+<!--   rmarkdown::github_document
+    code_folding: hide
+    code_download: true -->
+```{r setup, include = FALSE, warning = FALSE, message = FALSE, echo = FALSE}
+library(tidyverse)
+# Load the data
+cherry<-read.csv("C:/Users/cheap/Downloads/final final.csv")
+cherry<-cherry[,-c(1)]
+```
+
+
+In this section, we will illustrate how we delivered our final model. We considered linear regression without interaction, linear regression contains interactions, Lasso, ridge, and PCA regression. 
+
+
+
+## 1. Linear model : Base model 
+
+First model we considered is linear regression without interaction terms. We scored model by separating training set and test set. After fitting the model with training set, we compared the test set with the predicted value. We used RMSE to compare the performance of the models.  
+
+The table below presents the result, the RMSE of linear base model was around 7. 
+
+```{r, message=FALSE, warning=FALSE}
+library(caret)
+library(tidyverse)
+set.seed(003)
+# Define base linear model 
+
+# Cross validation
+df.base<-cherry[,c(1:41)]
+Linear.base<-data.frame(Model=c(),R2=c(), RMSE=c(), MAE=c(), AIC=c(), BIC=c())
+for(i in 1:20){
+  # Separate training and test set.
+  training.samples <- df.base$bloom_doy %>%  createDataPartition(p = 0.70, list = FALSE)
+  train.data  <- df.base[training.samples, ]
+  test.data <- df.base[-training.samples, ]
+  # Build the model
+  model1 <- lm(bloom_doy~., data = train.data)
+  # Make predictions and compute the R2, RMSE, MAE, AIC, and BIC
+  predictions <- model1 %>% predict(test.data)
+  result<-data.frame( Model=c("Linear base"),
+                      R2 =caret::R2(predictions, test.data$bloom_doy),
+                      RMSE = RMSE(predictions, test.data$bloom_doy),
+                      MAE = MAE(predictions, test.data$bloom_doy),
+                      AIC=AIC(model1),
+                      BIC=BIC(model1))
+  Linear.base<-rbind(Linear.base,result)
+}
+
+Linear.base
+
+```
+
+
+
+
+
+## 2. Linear model : Full model 
+
+Next model we considered is full linear model. We cross validated this model, and the RMSE of the model is about 5.7.
+
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(caret)
+library(glmnet)
+set.seed(003)
+# Define the full model
+
+# Cross-validation
+df<-cherry
+Linear.full<-data.frame(Model=c(),R2=c(), RMSE=c(), MAE=c(), AIC=c(), BIC=c())
+for(i in 1:20){
+  # Separate training and test set.
+  training.samples <- df$bloom_doy %>%  createDataPartition(p = 0.70, list = FALSE)
+  train.data  <- df[training.samples, ]
+  test.data <- df[-training.samples, ]
+  # Build the model
+  model2 <- lm(bloom_doy~., data = train.data)
+  # Make predictions and compute the R2, RMSE, MAE, AIC, and BIC
+  predictions <- model2 %>% predict(test.data)
+  result<-data.frame( Model=c("Linear full"),
+                      R2 =caret::R2(predictions, test.data$bloom_doy),
+                      RMSE = RMSE(predictions, test.data$bloom_doy),
+                      MAE = MAE(predictions, test.data$bloom_doy),
+                      AIC=AIC(model2),
+                      BIC=BIC(model2))
+  Linear.full<-rbind(Linear.full,result)
+}
+
+Linear.full
+```
+
+Next, we defined two functions that we will use to calculate AIC and BIC of PCA, Ridge and Lasso. 
+
+
+```{r, message=FALSE, warning=FALSE}
+# Define AIC and BIC function for ...
+aic.glmnet<-function(fit){
+  tLL <- fit$nulldev - deviance(fit)
+  k <- fit$df
+  n <- fit$nobs
+  AICc <- -tLL+2*k+2*k*(k+1)/(n-k-1)
+  return(AICc)
+}
+bic.glmnet<-function(fit){
+  tLL <- fit$nulldev - deviance(fit)
+  k <- fit$df
+  n <- fit$nobs
+  BIC<-log(n)*k - tLL
+  return(BIC)
+}
+```
+
+## 3. Ridge model
+
+Now, we will cross validate the Ridge model. We used <tt>glmnet</tt> function of <tt>glmnet</tt> package. The RMSE was around 5.7 when we used alpha 1 and lambda 0.001. 
+
+```{r, message=FALSE, warning=FALSE}
+
+
+####### cross validate Ridge
+library(caret)
+library(tidyverse)
+library(glmnet)
+set.seed(003)
+
+##
+lambdas <- 10^seq(2, -3, by = -.1)
+y.ridge<-df$bloom_doy
+x.ridge<-as.matrix(cherry[,-c(1)])
+
+###
+Ridge<-data.frame(Model=c(),R2=c(), RMSE=c(), MAE=c(), AIC=c(), BIC=c())
+for(i in 1:20){
+  training.samples <- df$bloom_doy %>%  createDataPartition(p = 0.7, list = FALSE)
+  train.data  <- x.ridge[training.samples, ]
+  test.data <- x.ridge[-training.samples, ]
+  y_train<-y.ridge[training.samples]
+  y_test<-y.ridge[-training.samples]
+  
+  # Build the model
+  model3 <- glmnet(train.data, y_train, nlambda = 25, alpha = 1, family = 'gaussian', lambda =0.001)
+  # Make predictions and compute the R2, RMSE, MAE, AIC, and BIC
+  predictions <- model3 %>% predict(as.matrix(test.data))
+  result<-data.frame( Model=c("Ridge"),
+                      R2 = unname(caret::R2(predictions, y_test)),
+                      RMSE = RMSE(predictions, y_test),
+                      MAE = MAE(predictions, y_test),
+                      AIC = aic.glmnet(model3),
+                      BIC = bic.glmnet(model3))
+  Ridge<-rbind(Ridge,result)
+}
+
+
+Ridge
+```
+
+## 4. Lasso model
+
+The next model we tested is Lasso. We used <tt>glmnet</tt> function of <tt>glmnet</tt> package. The RMSE was around 6.6 when we used alpha=0.001.
+
+
+```{r, message=FALSE, warning=FALSE}
+######### cross validate LASSO
+
+library(caret)
+library(tidyverse)
+library(glmnet)
+set.seed(003)
+Lasso<-data.frame(Model=c(),R2=c(), RMSE=c(), MAE=c(), AIC=c(), BIC=c())
+for(i in 1:20){
+  y.lasso<-df$bloom_doy
+  x.lasso<-as.matrix(cherry[,-c(1)])
+  training.samples <- df$bloom_doy %>%  createDataPartition(p = 0.7, list = FALSE)
+  train.data  <- x.lasso[training.samples, ]
+  test.data <- x.lasso[-training.samples, ]
+  y_train<-y.lasso[training.samples]
+  y_test<-y.lasso[-training.samples]
+  
+  # Build the model
+  model4 <- cv.glmnet(as.matrix(train.data), y_train, alpha = 0.001)
+  
+  # Make predictions and compute the R2, RMSE, MAE, AIC, and BIC
+  predictions <- model4 %>% predict(as.matrix(test.data), s="lambda.min")
+  result<-data.frame( Model=c("Lasso"),
+                      R2 =  caret::R2(unname(predictions), y_test),
+                      RMSE = RMSE(predictions, y_test),
+                      MAE = MAE(predictions, y_test)
+  )
+  Lasso<-rbind(Lasso,result)
+}
+
+Lasso
+```
+## 5. PCA model
+
+The final method we tested is PCA regression. We used <tt>pca</tt> function of <tt>pls</tt> package. The RMSE of the method was around 5.8 when we used 45 components. 
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(pls)
+library(caret)
+set.seed(003)
+########### cross validate PCA
+library(pls)
+df<-cherry
+PCA<-data.frame(Model=c(),R2=c(), RMSE=c(), MAE=c(), AIC=c(), BIC=c())
+for(i in 1:20){
+  training.samples <- df$bloom_doy %>%  createDataPartition(p = 0.7, list = FALSE)
+  train.data  <- df[training.samples, ]
+  test.data <- df[-training.samples, ]
+  #y_train<-y[training.samples]
+  y_test<-test.data$bloom_doy
+  
+  # Build the model
+  model5 <- pcr(bloom_doy~., data = train.data, scale = TRUE, validation = "CV")
+  # Make predictions and compute the R2, RMSE, MAE, AIC, and BIC
+  prediction <- model5 %>% predict(test.data)
+  predictions<-unname(unlist(prediction[,,45]))
+  result<-data.frame( Model5=c("PCA"),
+                      R2 =caret::R2(predictions, y_test),
+                      RMSE = RMSE(predictions, y_test),
+                      MAE = MAE(predictions, y_test))
+  PCA<-rbind(PCA,result)
+}
+
+validationplot(model5, val.type="R2")
+
+```
+
+## CV RESULT
+
+The table below highlights the performance of each model. In this cross validation, Ridge showed the lowest RMSE. However, since the result was different when we used python, the models were examined twice to compare the result.
+
+```{r, message=FALSE, warning=FALSE}
+
+CV.RESULT<-data.frame(MODEL=c("Base Linear", "Full Linear", "Ridge", "Lasso", "PCA"),
+           MEAN.R2=c(mean(Linear.base$R2), mean(Linear.full$R2), mean(Ridge$R2), mean(Lasso$R2), mean(PCA$R2)),           
+           MEAN.RMSE=c(mean(Linear.base$RMSE), mean(Linear.full$RMSE), mean(Ridge$RMSE), mean(Lasso$RMSE), mean(PCA$RMSE)), 
+           VARIANCE.RMSE=c(var(Linear.base$RMSE),var(Linear.full$RMSE),var(Ridge$RMSE),var(Lasso$RMSE),var(PCA$RMSE)))
+CV.RESULT
+#write.csv(CV.RESULT, "cvresult.csv")
+
+```
+
+## Coefficients of final Lasso model
+
+```{r, message=FALSE, warning=FALSE}
+# Coefficient of Lasso model
+set.seed(003)
+y.lasso<-df$bloom_doy
+x.lasso<-as.matrix(cherry[,-c(1)])
+# Build the model
+model.Lasso <- cv.glmnet(as.matrix(x.lasso), y.lasso, alpha = 1)
+
+# Get coefficient
+Lasso.coef<-coef(model.Lasso)
+Lasso.coef
+
+```
+
+
+## Coefficients of Ridge model
+```{r, message=FALSE, warning=FALSE}
+library(caret)
+library(tidyverse)
+library(glmnet)
+set.seed(003)
+
+##
+df<-cherry
+lambdas <- 10^seq(2, -3, by = -.1)
+y.ridge<-df$bloom_doy
+x.ridge<-as.matrix(cherry[,-c(1)])
+# Build the model
+model.ridge <- glmnet(x.ridge, y.ridge, nlambda = 25, alpha = 0, family = 'gaussian', lambda =0.001)
+
+# Get coefficient 
+model.ridge$beta
+
+```
