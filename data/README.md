@@ -29,15 +29,28 @@ The structure of the cleaned data files is as follows:
 * *tmin.n* The minimum temperature of October, November, December, January, February, March (through March 10), separately 
  -> the average `tmin` for month n {October: -2, November : -1, December : 0, January : 1, February : 2, March (1st - 10th): 3}
 * *tmax.n* The maximum temperature of October, November, December, January, February, March (through March 10), separately -> the average `tmax` for month n {October: -2, November : -1, December : 0, January : 1, February : 2, March (1st - 10th): 3}
-* *tmax.n*
 * *slope* The slope coefficient of the linear fit between day of year and average temperature in a period between the coldest period and March 10. It captures the speed of temperature change 
 * *intc* The intercept term coefficient of the linear fit between day of year and the squared average temperature in a period between the coldest period and March 10.  
 * *dg2_coef* The squared term coefficient of the linear fit between day of year and the squared average temperature in a period between the coldest period and March 10. It captures the acceleration of temperature change 
 
 
 In the analysis, there are some interaction terms considered:
-
-* 
+* `tavg.1` and `tavg_below_5`
+* `prcp.0` and `tavg_below_5`
+* `tavg.0` and `tmax.2`
+* `prcp.-2` and `prcp.2`
+* `tavg.0` and `prcp.2`
+* `Date_doy_tmax` and `Date_doy_tmin`
+* `tmin_moving` and `tmin.1`
+* `tavg_below_5` and `prcp.2`
+* `tavg.0` and `prcp.2`
+* `prcp.-1` and `tmax.3`
+* `tavg_above_10` and `lat`
+* `prcp.1` and `alt`
+* `tmin.-1` and `long.y`
+* `alt` and `tavg_moving`
+* `lat` and `long.y`
+* `long.y` and `long.x`
 
 ## Data sources
 
