@@ -1,8 +1,5 @@
 Models
 ================
-Lee Park
-2/28/2022
-
 # Models considered:
 
 ## For predicting 2022
