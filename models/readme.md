@@ -13,6 +13,9 @@ Lee Park
     Regression + Bagging, Random Forest
 3.  MARS (max\_term = 40) : Mars, Mars with Adaptive Boosting
 
+The table below is the mean and variance of RMSE from 100 cross validation with the train-test ratio at 7 to 3.
+In the codes, they might have 20 cross validation but we later ran 100 cross validation to make more accurate result.
+
 ``` r
 models = c('Simple Linear Model', 'Lasso Regression','Ridge Regression', 
            'Tree Regression','Tree + Bagging', 'Random Forest',
