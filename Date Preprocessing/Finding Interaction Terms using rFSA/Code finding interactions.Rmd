@@ -1,0 +1,112 @@
+---
+title: "Cherry Blossom prediction: Finding interactions"
+output: rmarkdown::github_document
+
+---
+<!--   rmarkdown::github_document
+    code_folding: hide
+    code_download: true -->
+```{r, include=FALSE, warning = FALSE, message = FALSE, echo = FALSE}
+cherry<-read.csv("C:/Users/cheap/Downloads/before_fsa.csv")
+```
+
+### <b> 1.  Finding interaction terms using FSA </b>
+In this page, we will demonstrate how we chose interaction terms. First, we used FSA to seek for possibility of interactions. To avoid prevalence of interaction term that might have been explained by dropped main effect, we included all main effects in the model to start. 
+
+```{r, message=FALSE, warning=FALSE}
+library(rFSA)
+
+#set the formula 
+formula<-as.formula("bloom_doy~lat+alt+year+year.sq+Date_doy_tavg+Date_doy_tmax+Date_doy_tmin+tavg_below_5+tavg_above_10+tavg_moving+tmin_moving+tmax_moving+prcp..2+prcp..1+prcp.0+prcp.1+prcp.2+tavg..2+tavg..1+tavg.0+tavg.1+tavg.2+tmax..2+tmax..1+tmax.0+tmax.1+tmax.2+tmin..2+tmin..1+tmin.0+tmin.1+tmin.2+long.y+long.x+slope+dg2_coef+intc+tavg.3+tmin.3+tmax.3")
+
+# Search for interaction term using FSA
+FSA(formula, data=cherry, fitfunc=lm, fixvar=c("lat","alt","year","year.sq","Date_doy_tavg","Date_doy_tmax",
+                                               "Date_doy_tmin","tavg_below_5","tavg_above_10","tavg_moving",
+                                               "tmin_moving","tmax_moving","prcp..2","prcp..1","prcp.0","prcp.1",
+                                               "prcp.2","tavg..2","tavg..1","tavg.0","tavg.1","tavg.2","tmax..2",
+                                               "tmax..1","tmax.0","tmax.1","tmax.2","tmin..2","tmin..1","tmin.0","tmin.1",
+                                               "tmin.2","long.y","long.x","slope","dg2_coef","intc","tavg.3","tmin.3","tmax.3",
+                                               "lat*tavg_above_10", "tavg_below_5*tavg.1", "tavg_below_5*prcp.0", "tavg.0*tmax.2"
+                                               , "prcp..2*prcp.2", "alt*prcp..1", "lat*long.y", "prcp..2*prcp.0", "prcp.2*tavg.0",
+                                               "Date_doy_tmax*Date_doy_tmin", "tmin_moving*tmin.1", "tavg_below_5*prcp.2",
+                                               "year.sq*Date_doy_tavg", "tmin..1*long.y", "tmax..1*long.x", "year*prcp.2",
+                                               "alt*tavg_moving", "prcp..1*tmax.3", "prcp..1*tmax.3"), quad=T, interactions=T )
+```
+
+Starting with all main effects, we kept seaching for interaction terms until AIC does not get better. The interaction term we found are:
+
+<tt>lat\*tavg_above_10</tt>, <tt>tavg_below_5\*tavg.1</tt>, <tt>tavg_below_5\*prcp.0</tt>, <tt>tavg.0\*tmax.2</tt>, 
+<tt>prcp..2\*prcp.2</tt>, <tt>alt\*prcp..1</tt>, <tt>lat\*long.y</tt>, <tt>prcp..2\*prcp.0</tt>, <tt>prcp.2\*tavg.0</tt>, 
+<tt>Date_doy_tmax\*Date_doy_tmin</tt>, <tt>tmin_moving\*tmin.1</tt>, <tt>tavg_below_5\*prcp.2</tt>, 
+<tt>year.sq\*Date_doy_tavg</tt>, <tt>tmin..1\*long.y</tt>, <tt>tmax..1\*long.x</tt>, <tt>year\*prcp.2</tt>, <tt>alt\*tavg_moving</tt>, <tt>prcp..1\*tmax.3</tt>, <tt>prcp..1\*tmax.3</tt>.
+
+
+### <b> 2.  Backward selection</b>
+
+Then, we applied forward and backward selection to trim down the model.
+
+```{r}
+
+# Full model.
+formula<-as.formula("bloom_doy~lat+alt+year+year.sq+Date_doy_tavg+Date_doy_tmax+Date_doy_tmin+tavg_below_5+tavg_above_10+tavg_moving+tmin_moving+tmax_moving+prcp..2+prcp..1+prcp.0+prcp.1+prcp.2+tavg..2+tavg..1+tavg.0+tavg.1+tavg.2+tmax..2+tmax..1+tmax.0+tmax.1+tmax.2+tmin..2+tmin..1+tmin.0+tmin.1+tmin.2+long.y+long.x+slope+dg2_coef+intc+tavg.3+tmin.3+tmax.3+lat*tavg_above_10+tavg_below_5*tavg.1+tavg_below_5*prcp.0+tavg.0*tmax.2+prcp..2*prcp.2+alt*prcp..1+lat*long.y+prcp..2*prcp.0+prcp.2*tavg.0+Date_doy_tmax*Date_doy_tmin+tmin_moving*tmin.1+tavg_below_5*prcp.2+year.sq*Date_doy_tavg+tmin..1*long.y+tmax..1*long.x+year*prcp.2+alt*tavg_moving+prcp..1*tmax.3+long.y*long.x")
+
+full.model <- lm(formula, data = cherry)
+
+library(MASS)
+
+# Backward selection
+# Stepwise regression model
+step.model.back <- stepAIC(full.model, direction = "backward", trace = FALSE)
+summary(step.model.back)
+plot(step.model.back$residuals)
+```
+
+### <b> 3. Forward selection </b>
+
+ Since backward selection found better model than forward selection, we finalized the list of variables that are included in our model. The list of variables are provided below:
+
+<tt>lat\*tavg_above_10</tt>, <tt>tavg_below_5\*tavg.1</tt>, <tt>tavg_below_5\*prcp.0</tt>, <tt>tavg.0\*tmax.2</tt>, 
+<tt>prcp..2\*prcp.2</tt>, <tt>alt\*prcp..1</tt>, <tt>lat\*long.y</tt>, <tt>prcp..2\*prcp.0</tt>, 
+<tt>prcp.2\*tavg.0</tt>, <tt>Date_doy_tmax\*Date_doy_tmin</tt>, <tt>tmin_moving\*tmin.1</tt>, <tt>tavg_below_5\*prcp.2</tt>, 
+<tt>year.sq\*Date_doy_tavg</tt>, <tt>tmin..1\*long.y</tt>, <tt>tmax..1\*long.x</tt>, <tt>year\*prcp.2</tt>, 
+<tt>alt\*tavg_moving</tt>, <tt>prcp..1\*tmax.3</tt>, <tt>long.y\*long.x</tt>
+
+
+```{r}
+# Forward selection
+# Stepwise regression model
+step.model.for <- stepAIC(full.model, direction = "forward", trace = FALSE)
+summary(step.model.for)
+
+```
+
+
+### <b> 4.Make a new dataset containing interaction effects </b>
+
+Now, we will make a dataset include all main effects and interaction effects. 
+
+
+```{r}
+attach(cherry)
+cherry$lattavg_above_10<-lat*tavg_above_10
+cherry$tavg_below_5tavg.1<-tavg_below_5*tavg.1
+cherry$tavg_below_5prcp.0<-tavg_below_5*prcp.0
+cherry$tavg.0tmax.2<-tavg.0*tmax.2
+cherry$prcp..2prcp.2<-prcp..2*prcp.2
+cherry$altprcp..1	<-alt*prcp..1
+cherry$latlong.y<-lat*long.y
+cherry$prcp..2prcp.0<-prcp..2*prcp.0
+cherry$prcp.2tavg.0<-prcp.2*tavg.0
+cherry$Date_doy_tmaxDate_doy_tmin<-Date_doy_tmax*Date_doy_tmin
+cherry$tmin_movingtmin.1<-tmin_moving*tmin.1
+cherry$tavg_below_5prcp.2<-tavg_below_5*prcp.2
+cherry$year.sqDate_doy_tavg<-year.sq*Date_doy_tavg
+cherry$tmin..1long.y<-tmin..1*long.y
+cherry$tmax..1long.x<-tmax..1*long.x
+cherry$yearprcp.2<-year*prcp.2
+cherry$alttavg_moving<-alt*tavg_moving
+cherry$prcp..1tmax.3<-prcp..1*tmax.3
+cherry$long.ylong.x<-long.y*long.x
+write.csv(cherry, "final final.csv")
+
+```
