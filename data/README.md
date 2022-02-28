@@ -57,3 +57,5 @@ In the analysis, there are some interaction terms considered:
 George Mason’s Department of Statistics cherry blossom peak bloom prediction competitio github repo: https://github.com/GMU-CherryBlossomCompetition/peak-bloom-prediction
 
 `rnoaa` R-package: https://github.com/ropensci/rnoaa
+
+The Weather Channel https://weather.com/
