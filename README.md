@@ -1,5 +1,5 @@
 # Cherry Blossom Peak Bloom Prediction
-### **Organization: The Dr.Bing Zhang Department of Statatics @ the University of Kentucky**
+### **Organization: Dr.Bing Zhang Department of Statatics @ the University of Kentucky**
 ### Authors: Lee Park, Jiyeon Park, Tori Stanton
 
 ## **1. Introduction**
