@@ -1,4 +1,4 @@
-# Hello World
+# Cherry Blossom: Predicting Cherry Blossom
 ### **Organization: Dr.Bing Zhang Department of Statatics @ the University of Kentucky**
 ### Authors: Lee Park, Jiyeon Park, Tori Stanton
 
