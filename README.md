@@ -1,4 +1,4 @@
-# Hello World
+# Predicting the Bloom Day of Year of Cherry Blossom Trees in 2022 - 2031
 ### **Organization: Dr.Bing Zhang Department of Statatics @ the University of Kentucky**
 ### Authors: Lee Park, Jiyeon Park, Tori Stanton
 
